@@ -91,6 +91,10 @@ func GetSelectorString(week int) string {
 	return fmt.Sprintf(".ml-allw.ml-w%d.ml-row", week)
 }
 
+func MakeTeam(name string, circuitPoints int) *Team {
+	return &Team{name, 0, 0, circuitPoints}
+}
+
 func GetLCSTeams() map[string]*Team {
 	m := make(map[string]*Team)
 	m["Team Liquid"] = &Team{"TL", 0, 0, 90}
@@ -103,6 +107,36 @@ func GetLCSTeams() map[string]*Team {
 	m["Clutch Gaming"] = &Team{"CG", 0, 0, 0}
 	m["Counter Logic Gaming"] = &Team{"CLG", 0, 0, 0}
 	m["OpTic Gaming"] = &Team{"OPT", 0, 0, 0}
+	return m
+}
+
+func GetLECTeams() map[string]*Team {
+	m := make(map[string]*Team)
+	m["G2 Esports"] = MakeTeam("G2", 0)
+	m["Fnatic"] = MakeTeam("FNC", 0)
+	m["Splyce"] = MakeTeam("SPY", 0)
+	m["FC Schalke 04 Esports"] = MakeTeam("S04", 0)
+	m["Origen"] = MakeTeam("OG", 0)
+	m["Rogue (European Team)"] = MakeTeam("RGE", 0)
+	m["Team Vitality"] = MakeTeam("VIT", 0)
+	m["Misfits Gaming"] = MakeTeam("MSF", 0)
+	m["SK Gaming"] = MakeTeam("SK", 0)
+	m["Excel Esports"] = MakeTeam("XL", 0)
+	return m
+}
+
+func GetLCKTeams() map[string]*Team {
+	m := make(map[string]*Team)
+	m["SANDBOX Gaming"] = MakeTeam("SB", 0)
+	m["DAMWON Gaming"] = MakeTeam("DWG", 0)
+	m["Griffin"] = MakeTeam("GRF", 0)
+	m["Kingzone DragonX"] = MakeTeam("KZ", 0)
+	m["Gen.G"] = MakeTeam("GEN", 0)
+	m["SK Telecom T1"] = MakeTeam("SKT", 0)
+	m["Afreeca Freecs"] = MakeTeam("AF", 0)
+	m["KT Rolster"] = MakeTeam("KT", 0)
+	m["Hanwha Life Esports"] = MakeTeam("HLE", 0)
+	m["Jin Air Green Wings"] = MakeTeam("JAG", 0)
 	return m
 }
 

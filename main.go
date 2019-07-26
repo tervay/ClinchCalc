@@ -2,26 +2,44 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"sort"
 	"sync"
 
+	"github.com/dustin/go-humanize"
 	"github.com/olekukonko/tablewriter"
 )
 
 func main() {
-	lcs := GetLCSTeams()
+	urlconf := map[string]string{
+		"lck": "https://lol.gamepedia.com/LCK/2019_Season/Summer_Season",
+		"lec": "https://lol.gamepedia.com/LEC/2019_Season/Summer_Season",
+		"lcs": "https://lol.gamepedia.com/LCS/2019_Season/Summer_Season",
+	}
+	teamconf := map[string]map[string]*Team{
+		"lck": GetLCKTeams(),
+		"lcs": GetLCSTeams(),
+		"lec": GetLECTeams(),
+	}
+
+	league := "lcs"
+	chosen_teams := teamconf[league]
+	chosen_url := urlconf[league]
 
 	original_ranking_map := make(map[string]int)
 	original_records := make(map[string]string)
 
-	s := ParseSchedule("https://lol.gamepedia.com/LCS/2019_Season/Summer_Season", lcs)
+	s := ParseSchedule(chosen_url, chosen_teams)
 
 	forces := [][]string{
 		// []string{"TSM", "FOX", "TSM"},
 		// []string{"FOX", "CLG", "CLG"},
 		// []string{"TL", "FOX", "TL"},
 		// []string{"FOX", "FLY", "FLY"},
+		// []string{"DWG", "JAG", "DWG"},
+		// []string{"JAG", "GEN", "GEN"},
+		// []string{"KT", "JAG", "KT"},
 	}
 
 	nSim := 0
@@ -37,7 +55,7 @@ func main() {
 	}
 
 	season := Season{}
-	for _, t := range lcs {
+	for _, t := range chosen_teams {
 		season.standings = append(season.standings, Rank{t, false})
 	}
 	season.Sort()
@@ -52,6 +70,8 @@ func main() {
 
 	finishes := make(map[string]map[int]int)
 
+	fmt.Printf("\n\tSimulating %d matches (%v combinations)\n\n",
+		nSim, humanize.Comma(int64(math.Pow(2, float64(nSim)))))
 	for combo := range GenerateCombinations("br", nSim) {
 		wg.Add(1)
 		for newSeason := range ProcessResults(combo, &wg, season, len(season.schedule.matches)-nSim, forces) {
