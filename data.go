@@ -64,13 +64,17 @@ func (s Season) Sort() {
 	}
 
 	sort.Slice(s.standings, func(i int, j int) bool {
+		if s.standings[i].team.wins == s.standings[j].team.wins {
+			return s.standings[i].team.losses < s.standings[j].team.losses
+		}
 		return s.standings[i].team.wins > s.standings[j].team.wins
 	})
 
 	for i, _ := range s.standings {
 		for j, _ := range s.standings {
 			if s.standings[i].team.wins == s.standings[j].team.wins &&
-				s.standings[i].team.name != s.standings[j].team.name {
+				s.standings[i].team.name != s.standings[j].team.name &&
+				s.standings[i].team.losses == s.standings[j].team.losses {
 				s.standings[i].tie = true
 				s.standings[j].tie = true
 			}
@@ -140,6 +144,27 @@ func GetLCKTeams() map[string]*Team {
 	return m
 }
 
+func GetLPLTeams() map[string]*Team {
+	m := make(map[string]*Team)
+	m["Invictus Gaming"] = MakeTeam("IG", 90)
+	m["JD Gaming"] = MakeTeam("JDG", 70)
+	m["FunPlus Phoenix"] = MakeTeam("FPX", 50)
+	m["Top Esports"] = MakeTeam("TES", 30)
+	m["Royal Never Give Up"] = MakeTeam("RNG", 10)
+	m["Dominus Esports"] = MakeTeam("DMO", 10)
+	m["Bilibili Gaming"] = MakeTeam("BLG", 0)
+	m["EDward Gaming"] = MakeTeam("EDG", 0)
+	m["LGD Gaming"] = MakeTeam("LDG", 0)
+	m["Oh My God"] = MakeTeam("OMG", 0)
+	m["Rogue Warriors"] = MakeTeam("RW", 0)
+	m["LNG Esports"] = MakeTeam("LNG", 0)
+	m["Suning"] = MakeTeam("SN", 0)
+	m["Team WE"] = MakeTeam("WE", 0)
+	m["Vici Gaming"] = MakeTeam("VG", 0)
+	m["Victory Five"] = MakeTeam("V5", 0)
+	return m
+}
+
 func ParseSchedule(url string, teams map[string]*Team) Schedule {
 	teams[""] = nil
 	defer delete(teams, "")
@@ -158,7 +183,7 @@ func ParseSchedule(url string, teams map[string]*Team) Schedule {
 		log.Fatal(err)
 	}
 
-	for i := range [10]int{} {
+	for i := range [12]int{} {
 		cls := GetSelectorString(i + 1)
 		doc.Find(cls).Each(func(index int, element *goquery.Selection) {
 			children := element.ChildrenFiltered(".ml-team")
