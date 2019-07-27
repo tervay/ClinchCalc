@@ -27,6 +27,7 @@ func main() {
 	}
 
 	league := os.Args[1]
+	markdown := len(os.Args) > 2 && os.Args[2] == "--md"
 	chosen_teams := teamconf[league]
 	chosen_url := urlconf[league]
 	fmt.Printf("\n\tSimulating %s from %s\n\n", strings.ToUpper(league), chosen_url)
@@ -44,15 +45,17 @@ func main() {
 		// []string{"TSM", "FOX", "FOX"},
 		// []string{"TL", "OPT", "OPT"},
 		// []string{"FLY", "C9", "FLY"},
+		// []string{"GGS", "100T", "GGS"},
 		// ----------- LCS ----------- //
 
 		// ----------- LEC ----------- //
 		// G2
+		[]string{"SK", "G2", "G2"},
 		[]string{"G2", "VIT", "G2"},
 		[]string{"G2", "RGE", "G2"},
 		[]string{"G2", "S04", "G2"},
 		[]string{"G2", "XL", "G2"},
-		[]string{"G2", "OG", "G2"},
+		[]string{"MSF", "G2", "G2"},
 		// ----------- LEC ----------- //
 
 		// ----------- LCK ----------- //
@@ -83,9 +86,12 @@ func main() {
 			if force[0] == m.blue.name && force[1] == m.red.name {
 				if force[0] == force[2] {
 					m.winner = m.blue
+					m.red.losses++
 				} else {
 					m.winner = m.red
+					m.blue.losses++
 				}
+				m.winner.wins++
 				foundForce = true
 			}
 		}
@@ -149,8 +155,6 @@ func main() {
 
 	for _, team := range teams {
 		counts := finishes[team]
-		// row := []string{team, original_records[team], "", "", "", "", "", "", "", "", "", ""}
-
 		row := make([]string, league_size+2)
 		row[0] = team
 		row[1] = original_records[team]
@@ -171,13 +175,15 @@ func main() {
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)
-	// table.SetHeader([]string{"Team", "", "1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th"})
-
 	header := []string{"Team", ""}
 	for i := 1; i <= league_size; i++ {
 		header = append(header, humanize.Ordinal(i))
 	}
 	table.SetHeader(header)
+	if markdown {
+		table.SetBorders(tablewriter.Border{Left: true, Top: false, Right: true, Bottom: false})
+		table.SetCenterSeparator("|")
+	}
 
 	for _, v := range data {
 		table.Append(v)
@@ -225,12 +231,15 @@ func ProcessResultsHelper(c chan Season, combination string, wg *sync.WaitGroup,
 	for _, r := range s.standings {
 		latest[r.team.name] = r.team
 	}
-
 	defer wg.Done()
-	for i, _ := range combination {
-		winnerColor := string(combination[i])
-		simmedMatch := s.schedule.matches[i+offset]
+
+	skip := 0
+	for x := 0; x < len(combination); x++ {
+		winnerColor := string(combination[x])
+		simmedMatch := s.schedule.matches[x+offset+skip]
 		if simmedMatch.winner != nil {
+			x--
+			skip++
 			continue
 		}
 
