@@ -20,6 +20,7 @@ type Match struct {
 	blue   *Team
 	red    *Team
 	winner *Team
+	simmed bool
 }
 
 func (m Match) GetLoser() *Team {
@@ -41,7 +42,7 @@ func (m Match) String() string {
 	} else {
 		s = m.winner.name
 	}
-	return fmt.Sprintf("%s vs %s (w=%s)", m.blue.name, m.red.name, s)
+	return fmt.Sprintf("%s vs %s (w=%s) [sim=%v]", m.blue.name, m.red.name, s, m.simmed)
 }
 
 type Schedule struct {
@@ -85,7 +86,7 @@ func (s Season) Sort() {
 func (s Season) String() string {
 	str := ""
 	for _, r := range s.standings {
-		str += fmt.Sprintf("%s (%d-%d) (%v) (@[%p])\n", r.team.name, r.team.wins, r.team.losses, r.tie, &r.team)
+		str += fmt.Sprintf("%s (%d-%d) (%v)\n", r.team.name, r.team.wins, r.team.losses, r.tie)
 	}
 
 	return str
@@ -165,6 +166,18 @@ func GetLPLTeams() map[string]*Team {
 	return m
 }
 
+func GetLMSTeams() map[string]*Team {
+	m := make(map[string]*Team)
+	m["J Team"] = MakeTeam("JT", 30)
+	m["ahq e-Sports Club"] = MakeTeam("AHQ", 50)
+	m["MAD Team"] = MakeTeam("MAD", 70)
+	m["Flash Wolves"] = MakeTeam("FW", 90)
+	m["Hong Kong Attitude"] = MakeTeam("HKA", 10)
+	m["G-Rex"] = MakeTeam("GRX", 10)
+	m["Alpha Esports"] = MakeTeam("ALF", 0)
+	return m
+}
+
 func ParseSchedule(url string, teams map[string]*Team) Schedule {
 	teams[""] = nil
 	defer delete(teams, "")
@@ -206,7 +219,7 @@ func ParseSchedule(url string, teams map[string]*Team) Schedule {
 				}
 			})
 
-			m := Match{teams[blue], teams[red], winner}
+			m := Match{teams[blue], teams[red], winner, false}
 			s.matches = append(s.matches, m)
 			if winner != nil {
 				winner.wins++

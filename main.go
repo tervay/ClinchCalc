@@ -18,16 +18,27 @@ func main() {
 		"lec": "https://lol.gamepedia.com/LEC/2019_Season/Summer_Season",
 		"lcs": "https://lol.gamepedia.com/LCS/2019_Season/Summer_Season",
 		"lpl": "https://lol.gamepedia.com/LPL/2019_Season/Summer_Season",
+		"lms": "https://lol.gamepedia.com/LMS/2019_Season/Summer_Season",
 	}
 	teamconf := map[string]map[string]*Team{
 		"lck": GetLCKTeams(),
 		"lcs": GetLCSTeams(),
 		"lec": GetLECTeams(),
 		"lpl": GetLPLTeams(),
+		"lms": GetLMSTeams(),
 	}
+	outro := strings.Replace(
+		"\n\n Curious about a universe where your favorite team finishes in X position? Let me know!\n\n"+
+			" This does not account for head-to-head tiebreakers :( Code is hard\n\n"+
+			" Written in some very low quality Go, pull requests welcome, PM me for link\n\n",
+		" ", " ^^^", -1)
 
 	league := os.Args[1]
 	markdown := len(os.Args) > 2 && os.Args[2] == "--md"
+	if !markdown {
+		outro = ""
+	}
+
 	chosen_teams := teamconf[league]
 	chosen_url := urlconf[league]
 	fmt.Printf("\n\tSimulating %s from %s\n\n", strings.ToUpper(league), chosen_url)
@@ -39,15 +50,13 @@ func main() {
 	s := ParseSchedule(chosen_url, chosen_teams)
 
 	forces := [][]string{
+		// =========================== //
 		// ----------- LCS ----------- //
-		// []string{"FLY", "C9", "C9"},
-		// []string{"C9", "TL", "TL"},
-		// []string{"TSM", "FOX", "FOX"},
-		// []string{"TL", "OPT", "OPT"},
-		// []string{"FLY", "C9", "FLY"},
-		// []string{"GGS", "100T", "GGS"},
+		// []string{"CLG", "CG", "CLG"},
+		// []string{"TSM", "TL", "TSM"},
+		// []string{"100T", "TSM", "100T"},
 		// ----------- LCS ----------- //
-
+		// =========================== //
 		// ----------- LEC ----------- //
 		// G2
 		[]string{"SK", "G2", "G2"},
@@ -57,7 +66,7 @@ func main() {
 		[]string{"G2", "XL", "G2"},
 		[]string{"MSF", "G2", "G2"},
 		// ----------- LEC ----------- //
-
+		// =========================== //
 		// ----------- LCK ----------- //
 		// JAG
 		[]string{"DWG", "JAG", "DWG"},
@@ -72,6 +81,7 @@ func main() {
 		[]string{"AF", "HLE", "AF"},
 		[]string{"HLE", "GRF", "GRF"},
 		// ----------- LCK ----------- //
+		// =========================== //
 	}
 
 	nSim := 0
@@ -85,9 +95,11 @@ func main() {
 		for _, force := range forces {
 			if force[0] == m.blue.name && force[1] == m.red.name {
 				if force[0] == force[2] {
+					fmt.Printf("Forcing %v 1-0 %v\n", force[0], force[1])
 					m.winner = m.blue
 					m.red.losses++
 				} else {
+					fmt.Printf("Forcing %v 0-1 %v\n", force[0], force[1])
 					m.winner = m.red
 					m.blue.losses++
 				}
@@ -98,6 +110,7 @@ func main() {
 
 		if !foundForce {
 			nSim++
+			m.simmed = true
 		} else {
 			toSkip = append(toSkip, i)
 		}
@@ -189,6 +202,7 @@ func main() {
 		table.Append(v)
 	}
 	table.Render()
+	fmt.Println(outro)
 }
 
 func GenerateCombinations(alphabet string, length int) <-chan string {
@@ -243,6 +257,8 @@ func ProcessResultsHelper(c chan Season, combination string, wg *sync.WaitGroup,
 			continue
 		}
 
+		simmedMatch.simmed = true
+
 		if _, ok := latest[simmedMatch.red.name]; !ok {
 			latest[simmedMatch.red.name] = simmedMatch.red
 		}
@@ -268,6 +284,7 @@ func ProcessResultsHelper(c chan Season, combination string, wg *sync.WaitGroup,
 				} else {
 					winnerColor = "r"
 				}
+				simmedMatch.simmed = true
 			}
 		}
 
@@ -286,6 +303,45 @@ func ProcessResultsHelper(c chan Season, combination string, wg *sync.WaitGroup,
 		newSeason.standings = append(newSeason.standings, Rank{v, false})
 	}
 
+	checkForTeam := ""
+	checkForFinish := 1
+
 	newSeason.Sort()
+
+	if checkForTeam != "" {
+		if newSeason.standings[checkForFinish-1].team.name == checkForTeam {
+			fmt.Printf("%v finishes %v when the next %v matches are won by %v. Final standings:\n%v\n",
+				checkForTeam, humanize.Ordinal(checkForFinish), len(combination), combination, newSeason)
+
+			skip = 0
+			for x := 0; x < len(combination); x++ {
+				winnerColor := string(combination[x])
+				simmedMatch := s.schedule.matches[x+offset+skip]
+				if simmedMatch.winner != nil {
+					x--
+					skip++
+					continue
+				}
+
+				if winnerColor == "r" {
+					fmt.Printf("Match #%v: %v 0-1 %v\n", x+offset+skip, simmedMatch.blue.name, simmedMatch.red.name)
+				} else {
+					fmt.Printf("Match #%v: %v 1-0 %v\n", x+offset+skip, simmedMatch.blue.name, simmedMatch.red.name)
+				}
+			}
+			fmt.Println("===============")
+
+			// fmt.Println("Match results:")
+			// for i, m := range s.schedule.matches {
+			// 	if m.simmed {
+			// 		fmt.Println(m)
+			// 	} else {
+			// 		fmt.Printf("%v %v\n", i, m)
+			// 	}
+			// }
+			// fmt.Print("\n\n")
+		}
+	}
+
 	c <- newSeason
 }
