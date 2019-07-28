@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"math"
 	"os"
@@ -149,13 +148,15 @@ func main() {
 	fmt.Printf("\n\tSimulating %d matches (%v combinations)\n\n",
 		nSim, humanize.Comma(int64(math.Pow(2, float64(nSim)))))
 
-	totals := make(map[string]int)
+	totals := make(map[int]int)
 	for combo := range GenerateCombinations("br", nSim) {
 		wg.Add(1)
 		for newSeason := range ProcessResults(combo, &wg, season, len(season.schedule.matches)-nSim-len(toSkip), forces, toSkip) {
 			for i, t := range newSeason.standings {
+				if _, ok := totals[i]; !ok {
+					totals[i] = 0
+				}
 				if _, ok := finishesUntied[t.team.name]; !ok {
-					totals[t.team.name] = 0
 					finishesUntied[t.team.name] = make(map[int]int)
 					finishesTied[t.team.name] = make(map[int]int)
 					for n := 0; n < league_size; n++ {
@@ -168,36 +169,16 @@ func main() {
 					for j := 0; j < league_size; j++ {
 						if newSeason.standings[j].tie && newSeason.standings[j].team.wins == t.team.wins {
 							finishesTied[t.team.name][j]++
-							totals[t.team.name]++
+							totals[j]++
 						}
 					}
 				} else {
 					finishesUntied[t.team.name][i]++
-					totals[t.team.name]++
+					totals[i]++
 				}
-
-				// 	finishesUntied[t.team.name][i]++
-				// 	totals[t.team.name]++
-
-				// 	for j := 0; j < league_size; j++ {
-				// 		if newSeason.standings[j].tie && newSeason.standings[j].team.wins == t.team.wins {
-				// 			finishes[t.team.name][j]++
-				// 			totals[t.team.name]++
-				// 		}
-				// 	}
 			}
 		}
 	}
-
-	fmt.Println("Untied:")
-	q, _ := json.MarshalIndent(finishesUntied, "", "  ")
-	fmt.Println(string(q))
-	fmt.Println("Tied:")
-	q, _ = json.MarshalIndent(finishesTied, "", " ")
-	fmt.Println(string(q))
-	fmt.Println("Totals:")
-	q, _ = json.MarshalIndent(totals, "", "  ")
-	fmt.Println(string(q))
 
 	wg.Wait()
 
@@ -224,16 +205,8 @@ func main() {
 				// fmt.Printf("%v cannot finish #%v\n", team, key+1)
 				row[key+2] = "X"
 			} else if displayPct {
-				val := (float64(counts[key]) + float64(finishesTied[team][key])) * 100.0 / float64(totals[team])
-				fmt.Printf("%v: (%v + %v) * 100 / %v = %.1f\n",
-					team, counts[key], finishesTied[team][key], totals[team], val)
-				var format string
-				if val >= 1.0 {
-					format = "%.0f%%"
-				} else {
-					format = "%.1f%%"
-				}
-				row[key+2] = fmt.Sprintf(format, val)
+				val := (float64(counts[key]) + float64(finishesTied[team][key])) * 100.0 / float64(totals[key])
+				row[key+2] = SmartFormat(val)
 			}
 		}
 

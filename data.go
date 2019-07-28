@@ -230,3 +230,13 @@ func ParseSchedule(url string, teams map[string]*Team) Schedule {
 
 	return s
 }
+
+func SmartFormat(n float64) string {
+	if n >= 1.0 {
+		return fmt.Sprintf("%.0f%%", n)
+	} else if n >= 0.1 {
+		return fmt.Sprintf("%.1f%%", n)
+	} else {
+		return fmt.Sprintf("%.2f%%", n)
+	}
+}
