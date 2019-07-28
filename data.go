@@ -46,7 +46,7 @@ func (m Match) String() string {
 }
 
 type Schedule struct {
-	matches []Match
+	matches []*Match
 }
 
 type Rank struct {
@@ -182,7 +182,7 @@ func ParseSchedule(url string, teams map[string]*Team) Schedule {
 	teams[""] = nil
 	defer delete(teams, "")
 
-	s := Schedule{[]Match{}}
+	s := Schedule{[]*Match{}}
 
 	resp, err := http.Get(url)
 	if err != nil {
@@ -220,7 +220,7 @@ func ParseSchedule(url string, teams map[string]*Team) Schedule {
 			})
 
 			m := Match{teams[blue], teams[red], winner, false}
-			s.matches = append(s.matches, m)
+			s.matches = append(s.matches, &m)
 			if winner != nil {
 				winner.wins++
 				m.GetLoser().losses++

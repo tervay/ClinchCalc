@@ -38,6 +38,12 @@ func main() {
 	if !markdown {
 		outro = ""
 	}
+	displayPct := (len(os.Args) > 2 && os.Args[2] == "--pct") ||
+		(len(os.Args) > 3 && (os.Args[2] == "--pct" || os.Args[3] == "--pct"))
+
+	if markdown && displayPct {
+		outro = "\n\n ^^^Percentages ^^^assume ^^^that ^^^each ^^^match ^^^is ^^^a ^^^50/50 ^^^tossup" + outro
+	}
 
 	chosen_teams := teamconf[league]
 	chosen_url := urlconf[league]
@@ -52,9 +58,11 @@ func main() {
 	forces := [][]string{
 		// =========================== //
 		// ----------- LCS ----------- //
-		// []string{"CLG", "CG", "CLG"},
+		// []string{"FLY", "TSM", "TSM"},
 		// []string{"TSM", "TL", "TSM"},
-		// []string{"100T", "TSM", "100T"},
+		// []string{"100T", "TSM", "TSM"},
+		// []string{"C9", "TL", "C9"},
+		// []string{"TL", "FOX", "FOX"},
 		// ----------- LCS ----------- //
 		// =========================== //
 		// ----------- LEC ----------- //
@@ -105,12 +113,12 @@ func main() {
 				}
 				m.winner.wins++
 				foundForce = true
+				m.simmed = true
 			}
 		}
 
 		if !foundForce {
 			nSim++
-			m.simmed = true
 		} else {
 			toSkip = append(toSkip, i)
 		}
@@ -134,22 +142,27 @@ func main() {
 
 	fmt.Printf("\n\tSimulating %d matches (%v combinations)\n\n",
 		nSim, humanize.Comma(int64(math.Pow(2, float64(nSim)))))
+
+	totals := make(map[string]int)
 	for combo := range GenerateCombinations("br", nSim) {
 		wg.Add(1)
-		for newSeason := range ProcessResults(combo, &wg, season, len(season.schedule.matches)-nSim, forces, toSkip) {
+		for newSeason := range ProcessResults(combo, &wg, season, len(season.schedule.matches)-nSim-len(toSkip), forces, toSkip) {
 			for i, t := range newSeason.standings {
 				if _, ok := finishes[t.team.name]; !ok {
+					totals[t.team.name] = 0
 					finishes[t.team.name] = make(map[int]int)
 					for n := 0; n < league_size; n++ {
 						finishes[t.team.name][n] = 0
 					}
 				}
 
-				finishes[t.team.name][i] += 1
+				finishes[t.team.name][i]++
+				totals[t.team.name]++
 
 				for j := 0; j < league_size; j++ {
 					if newSeason.standings[j].tie && newSeason.standings[j].team.wins == t.team.wins {
-						finishes[t.team.name][j] += 1
+						finishes[t.team.name][j]++
+						totals[t.team.name]++
 					}
 				}
 			}
@@ -159,7 +172,6 @@ func main() {
 	wg.Wait()
 
 	data := [][]string{}
-
 	teams := []string{}
 	for t, _ := range original_ranking_map {
 		teams = append(teams, t)
@@ -181,6 +193,15 @@ func main() {
 			if counts[key] == 0 {
 				// fmt.Printf("%v cannot finish #%v\n", team, key+1)
 				row[key+2] = "X"
+			} else if displayPct {
+				val := float64(counts[key]) * 100.0 / float64(totals[team])
+				var format string
+				if val >= 1.0 {
+					format = "%.0f%%"
+				} else {
+					format = "%.1f%%"
+				}
+				row[key+2] = fmt.Sprintf(format, val)
 			}
 		}
 
@@ -241,16 +262,37 @@ func ProcessResults(combination string, wg *sync.WaitGroup, s Season, offset int
 func ProcessResultsHelper(c chan Season, combination string, wg *sync.WaitGroup,
 	s Season, offset int, forces [][]string, forced []int) {
 	latest := make(map[string]*Team)
+	print := combination == ""
+	if !print {
+		// return
+	}
 
 	for _, r := range s.standings {
 		latest[r.team.name] = r.team
 	}
 	defer wg.Done()
 
+	newSchedule := Schedule{}
+	newMatches := make([]*Match, 0)
+	for _, m := range s.schedule.matches {
+		mCopy := *m
+		newMatches = append(newMatches, &mCopy)
+		if print {
+			fmt.Printf("[%v, %v] [%v, %v]\n", m, &m, mCopy, &mCopy)
+		}
+	}
+	newSchedule.matches = newMatches
+
 	skip := 0
 	for x := 0; x < len(combination); x++ {
 		winnerColor := string(combination[x])
-		simmedMatch := s.schedule.matches[x+offset+skip]
+		if print {
+			fmt.Printf("x := %v, skip := %v | offset := %v | len(m) := %v\n", x, skip, offset, len(newSchedule.matches))
+		}
+		simmedMatch := newSchedule.matches[x+offset+skip]
+		if print {
+			fmt.Println(simmedMatch)
+		}
 		if simmedMatch.winner != nil {
 			x--
 			skip++
@@ -304,42 +346,37 @@ func ProcessResultsHelper(c chan Season, combination string, wg *sync.WaitGroup,
 	}
 
 	checkForTeam := ""
-	checkForFinish := 1
+	checkForFinish := 4
+	checkQuietly := true
 
 	newSeason.Sort()
 
 	if checkForTeam != "" {
 		if newSeason.standings[checkForFinish-1].team.name == checkForTeam {
-			fmt.Printf("%v finishes %v when the next %v matches are won by %v. Final standings:\n%v\n",
-				checkForTeam, humanize.Ordinal(checkForFinish), len(combination), combination, newSeason)
+			if checkQuietly {
+				fmt.Printf("! Found %v in %v\n", checkForTeam, humanize.Ordinal(checkForFinish))
+			} else {
+				fmt.Printf("%v finishes %v when the next %v matches are won by %v. Final standings:\n%v\n",
+					checkForTeam, humanize.Ordinal(checkForFinish), len(combination), combination, newSeason)
 
-			skip = 0
-			for x := 0; x < len(combination); x++ {
-				winnerColor := string(combination[x])
-				simmedMatch := s.schedule.matches[x+offset+skip]
-				if simmedMatch.winner != nil {
-					x--
-					skip++
-					continue
-				}
+				skip = 0
+				for x := 0; x < len(combination); x++ {
+					winnerColor := string(combination[x])
+					simmedMatch := s.schedule.matches[x+offset+skip]
+					if simmedMatch.winner != nil {
+						x--
+						skip++
+						continue
+					}
 
-				if winnerColor == "r" {
-					fmt.Printf("Match #%v: %v 0-1 %v\n", x+offset+skip, simmedMatch.blue.name, simmedMatch.red.name)
-				} else {
-					fmt.Printf("Match #%v: %v 1-0 %v\n", x+offset+skip, simmedMatch.blue.name, simmedMatch.red.name)
+					if winnerColor == "r" {
+						fmt.Printf("Match #%v: %v 0-1 %v\n", x+offset+skip, simmedMatch.blue.name, simmedMatch.red.name)
+					} else {
+						fmt.Printf("Match #%v: %v 1-0 %v\n", x+offset+skip, simmedMatch.blue.name, simmedMatch.red.name)
+					}
 				}
+				fmt.Println("===============")
 			}
-			fmt.Println("===============")
-
-			// fmt.Println("Match results:")
-			// for i, m := range s.schedule.matches {
-			// 	if m.simmed {
-			// 		fmt.Println(m)
-			// 	} else {
-			// 		fmt.Printf("%v %v\n", i, m)
-			// 	}
-			// }
-			// fmt.Print("\n\n")
 		}
 	}
 
