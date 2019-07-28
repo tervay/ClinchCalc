@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"math"
 	"os"
@@ -63,6 +64,10 @@ func main() {
 		// []string{"100T", "TSM", "TSM"},
 		// []string{"C9", "TL", "C9"},
 		// []string{"TL", "FOX", "FOX"},
+		// []string{"FOX", "CLG", "CLG"},
+		// []string{"C9", "GGS", "GGS"},
+		// []string{"100T", "CLG", "CLG"},
+		// []string{"CLG", "OPT", "OPT"},
 		// ----------- LCS ----------- //
 		// =========================== //
 		// ----------- LEC ----------- //
@@ -138,7 +143,8 @@ func main() {
 
 	var wg sync.WaitGroup
 
-	finishes := make(map[string]map[int]int)
+	finishesUntied := make(map[string]map[int]int)
+	finishesTied := make(map[string]map[int]int)
 
 	fmt.Printf("\n\tSimulating %d matches (%v combinations)\n\n",
 		nSim, humanize.Comma(int64(math.Pow(2, float64(nSim)))))
@@ -148,26 +154,50 @@ func main() {
 		wg.Add(1)
 		for newSeason := range ProcessResults(combo, &wg, season, len(season.schedule.matches)-nSim-len(toSkip), forces, toSkip) {
 			for i, t := range newSeason.standings {
-				if _, ok := finishes[t.team.name]; !ok {
+				if _, ok := finishesUntied[t.team.name]; !ok {
 					totals[t.team.name] = 0
-					finishes[t.team.name] = make(map[int]int)
+					finishesUntied[t.team.name] = make(map[int]int)
+					finishesTied[t.team.name] = make(map[int]int)
 					for n := 0; n < league_size; n++ {
-						finishes[t.team.name][n] = 0
+						finishesUntied[t.team.name][n] = 0
+						finishesTied[t.team.name][n] = 0
 					}
 				}
 
-				finishes[t.team.name][i]++
-				totals[t.team.name]++
-
-				for j := 0; j < league_size; j++ {
-					if newSeason.standings[j].tie && newSeason.standings[j].team.wins == t.team.wins {
-						finishes[t.team.name][j]++
-						totals[t.team.name]++
+				if t.tie {
+					for j := 0; j < league_size; j++ {
+						if newSeason.standings[j].tie && newSeason.standings[j].team.wins == t.team.wins {
+							finishesTied[t.team.name][j]++
+							totals[t.team.name]++
+						}
 					}
+				} else {
+					finishesUntied[t.team.name][i]++
+					totals[t.team.name]++
 				}
+
+				// 	finishesUntied[t.team.name][i]++
+				// 	totals[t.team.name]++
+
+				// 	for j := 0; j < league_size; j++ {
+				// 		if newSeason.standings[j].tie && newSeason.standings[j].team.wins == t.team.wins {
+				// 			finishes[t.team.name][j]++
+				// 			totals[t.team.name]++
+				// 		}
+				// 	}
 			}
 		}
 	}
+
+	fmt.Println("Untied:")
+	q, _ := json.MarshalIndent(finishesUntied, "", "  ")
+	fmt.Println(string(q))
+	fmt.Println("Tied:")
+	q, _ = json.MarshalIndent(finishesTied, "", " ")
+	fmt.Println(string(q))
+	fmt.Println("Totals:")
+	q, _ = json.MarshalIndent(totals, "", "  ")
+	fmt.Println(string(q))
 
 	wg.Wait()
 
@@ -179,7 +209,7 @@ func main() {
 	sort.Slice(teams, func(i, j int) bool { return original_ranking_map[teams[i]] < original_ranking_map[teams[j]] })
 
 	for _, team := range teams {
-		counts := finishes[team]
+		counts := finishesUntied[team]
 		row := make([]string, league_size+2)
 		row[0] = team
 		row[1] = original_records[team]
@@ -190,11 +220,13 @@ func main() {
 		}
 		sort.Slice(keys, func(i, j int) bool { return keys[i] < keys[j] })
 		for _, key := range keys {
-			if counts[key] == 0 {
+			if counts[key] == 0 && finishesTied[team][key] == 0 {
 				// fmt.Printf("%v cannot finish #%v\n", team, key+1)
 				row[key+2] = "X"
 			} else if displayPct {
-				val := float64(counts[key]) * 100.0 / float64(totals[team])
+				val := (float64(counts[key]) + float64(finishesTied[team][key])) * 100.0 / float64(totals[team])
+				fmt.Printf("%v: (%v + %v) * 100 / %v = %.1f\n",
+					team, counts[key], finishesTied[team][key], totals[team], val)
 				var format string
 				if val >= 1.0 {
 					format = "%.0f%%"
