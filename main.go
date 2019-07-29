@@ -55,7 +55,7 @@ func main() {
 	forces := [][]string{
 		// =========================== //
 		// ----------- LCS ----------- //
-		[]string{"CG", "FLY", "CG"},
+		//
 		// ----------- LCS ----------- //
 		// =========================== //
 		// ----------- LEC ----------- //
@@ -130,7 +130,6 @@ func main() {
 	}
 	season.schedule = s
 	season.Sort()
-	// os.Exit(1)
 	for i, v := range season.standings {
 		// fmt.Printf("%s is %d-%d\n", v.team.name, v.team.wins, v.team.losses)
 		original_ranking_map[v.team.name] = i
@@ -139,39 +138,38 @@ func main() {
 
 	var wg sync.WaitGroup
 
-	finishesUntied := make(map[string]map[int]int)
-	finishesTied := make(map[string]map[int]int)
+	finishes := make(map[string]map[int]float64)
 
 	fmt.Printf("\n\tSimulating %d matches (%v combinations)\n\n",
 		nSim, humanize.Comma(int64(math.Pow(2, float64(nSim)))))
 
-	totals := make(map[int]int)
 	for combo := range GenerateCombinations("br", nSim) {
 		wg.Add(1)
 		for newSeason := range ProcessResults(combo, &wg, season, len(season.schedule.matches)-nSim-len(toSkip), forces, toSkip) {
 			for i, t := range newSeason.standings {
-				if _, ok := totals[i]; !ok {
-					totals[i] = 0
-				}
-				if _, ok := finishesUntied[t.team.name]; !ok {
-					finishesUntied[t.team.name] = make(map[int]int)
-					finishesTied[t.team.name] = make(map[int]int)
+				if _, ok := finishes[t.team.name]; !ok {
+					finishes[t.team.name] = make(map[int]float64)
 					for n := 0; n < league_size; n++ {
-						finishesUntied[t.team.name][n] = 0
-						finishesTied[t.team.name][n] = 0
+						finishes[t.team.name][n] = 0
 					}
 				}
 
+				nTies := 0
 				if t.tie {
 					for j := 0; j < league_size; j++ {
 						if newSeason.standings[j].tie && newSeason.standings[j].team.wins == t.team.wins {
-							finishesTied[t.team.name][j]++
-							totals[j]++
+							nTies++
 						}
 					}
+
+					for j := 0; j < league_size; j++ {
+						if newSeason.standings[j].tie && newSeason.standings[j].team.wins == t.team.wins {
+							finishes[t.team.name][j] += (1.0 / float64(nTies))
+						}
+					}
+
 				} else {
-					finishesUntied[t.team.name][i]++
-					totals[i]++
+					finishes[t.team.name][i]++
 				}
 			}
 		}
@@ -187,7 +185,7 @@ func main() {
 	sort.Slice(teams, func(i, j int) bool { return original_ranking_map[teams[i]] < original_ranking_map[teams[j]] })
 
 	for _, team := range teams {
-		counts := finishesUntied[team]
+		counts := finishes[team]
 		row := make([]string, league_size+2)
 		row[0] = team
 		row[1] = original_records[team]
@@ -198,11 +196,11 @@ func main() {
 		}
 		sort.Slice(keys, func(i, j int) bool { return keys[i] < keys[j] })
 		for _, key := range keys {
-			if counts[key] == 0 && finishesTied[team][key] == 0 {
+			if counts[key] == 0 && finishes[team][key] == 0 {
 				// fmt.Printf("%v cannot finish #%v\n", team, key+1)
 				row[key+2] = "X"
 			} else if displayPct {
-				val := (float64(counts[key]) + float64(finishesTied[team][key])) * 100.0 / float64(totals[key])
+				val := finishes[team][key] * 100.0 / (math.Pow(2, float64(nSim)))
 				row[key+2] = SmartFormat(val)
 			}
 		}
