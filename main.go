@@ -28,9 +28,10 @@ func main() {
 		"lms": GetLMSTeams(),
 	}
 	outro := strings.Replace(
-		"\n\n Curious about a universe where your favorite team finishes in X position? Let me know!\n\n"+
-			" This does not account for head-to-head tiebreakers :( Code is hard\n\n"+
+		"\n\n Percentages assume each match is a 50/50 tossup\n\n"+
+			" The percentages are imperfect due to how tiebreaker math works out; they are there simply for estimates\n\n"+
 			" Written in some very low quality Go, pull requests welcome, PM me for link\n\n",
+		// "[ Foldy sheet by Adamgo83](https://www.reddit.com/r/leagueoflegends/comments/ciq0sj/clutch_gaming_vs_counter_logic_gaming_lcs_2019/ev8h337/)",
 		" ", " ^^^", -1)
 
 	league := os.Args[1]
@@ -40,10 +41,6 @@ func main() {
 	}
 	displayPct := (len(os.Args) > 2 && os.Args[2] == "--pct") ||
 		(len(os.Args) > 3 && (os.Args[2] == "--pct" || os.Args[3] == "--pct"))
-
-	if markdown && displayPct {
-		outro = "\n\n ^^^Percentages ^^^assume ^^^that ^^^each ^^^match ^^^is ^^^a ^^^50/50 ^^^tossup" + outro
-	}
 
 	chosen_teams := teamconf[league]
 	chosen_url := urlconf[league]
@@ -58,15 +55,7 @@ func main() {
 	forces := [][]string{
 		// =========================== //
 		// ----------- LCS ----------- //
-		// []string{"FLY", "TSM", "TSM"},
-		// []string{"TSM", "TL", "TSM"},
-		// []string{"100T", "TSM", "TSM"},
-		// []string{"C9", "TL", "C9"},
-		// []string{"TL", "FOX", "FOX"},
-		// []string{"FOX", "CLG", "CLG"},
-		// []string{"C9", "GGS", "GGS"},
-		// []string{"100T", "CLG", "CLG"},
-		// []string{"CLG", "OPT", "OPT"},
+		[]string{"CG", "FLY", "CG"},
 		// ----------- LCS ----------- //
 		// =========================== //
 		// ----------- LEC ----------- //
@@ -77,21 +66,28 @@ func main() {
 		[]string{"G2", "S04", "G2"},
 		[]string{"G2", "XL", "G2"},
 		[]string{"MSF", "G2", "G2"},
+		// FNC
+		[]string{"XL", "FNC", "FNC"},
+		[]string{"FNC", "VIT", "FNC"},
+		[]string{"FNC", "RGE", "FNC"},
+		// OG
+		[]string{"RGE", "OG", "OG"},
+		[]string{"OG", "XL", "OG"},
 		// ----------- LEC ----------- //
 		// =========================== //
 		// ----------- LCK ----------- //
-		// JAG
-		[]string{"DWG", "JAG", "DWG"},
-		[]string{"JAG", "GEN", "GEN"},
-		[]string{"JAG", "KZ", "KZ"},
-		[]string{"KT", "JAG", "KT"},
-		[]string{"GRF", "JAG", "GRF"},
-		// HLE
-		[]string{"KT", "HLE", "KT"},
-		[]string{"HLE", "DWG", "DWG"},
-		[]string{"HLE", "SKT", "SKT"},
-		[]string{"AF", "HLE", "AF"},
-		[]string{"HLE", "GRF", "GRF"},
+		// // JAG
+		// []string{"DWG", "JAG", "DWG"},
+		// []string{"JAG", "GEN", "GEN"},
+		// []string{"JAG", "KZ", "KZ"},
+		// []string{"KT", "JAG", "KT"},
+		// []string{"GRF", "JAG", "GRF"},
+		// // HLE
+		// []string{"KT", "HLE", "KT"},
+		// []string{"HLE", "DWG", "DWG"},
+		// []string{"HLE", "SKT", "SKT"},
+		// []string{"AF", "HLE", "AF"},
+		// []string{"HLE", "GRF", "GRF"},
 		// ----------- LCK ----------- //
 		// =========================== //
 	}
@@ -132,13 +128,14 @@ func main() {
 	for _, t := range chosen_teams {
 		season.standings = append(season.standings, Rank{t, false})
 	}
+	season.schedule = s
 	season.Sort()
+	// os.Exit(1)
 	for i, v := range season.standings {
 		// fmt.Printf("%s is %d-%d\n", v.team.name, v.team.wins, v.team.losses)
 		original_ranking_map[v.team.name] = i
 		original_records[v.team.name] = fmt.Sprintf("%v-%v", v.team.wins, v.team.losses)
 	}
-	season.schedule = s
 
 	var wg sync.WaitGroup
 
@@ -349,6 +346,7 @@ func ProcessResultsHelper(c chan Season, combination string, wg *sync.WaitGroup,
 	for _, v := range latest {
 		newSeason.standings = append(newSeason.standings, Rank{v, false})
 	}
+	newSeason.schedule = newSchedule
 
 	checkForTeam := ""
 	checkForFinish := 4

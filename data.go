@@ -64,11 +64,44 @@ func (s Season) Sort() {
 		r.tie = false
 	}
 
+	doNotTie := []string{}
+
 	sort.Slice(s.standings, func(i int, j int) bool {
-		if s.standings[i].team.wins == s.standings[j].team.wins {
-			return s.standings[i].team.losses < s.standings[j].team.losses
+		iTeam := s.standings[i].team
+		jTeam := s.standings[j].team
+		iWins := 0
+		jWins := 0
+		for _, m := range s.schedule.matches {
+			if m.winner == nil {
+				continue
+			}
+			if m.winner.name == iTeam.name && m.GetLoser().name == jTeam.name {
+				iWins++
+			} else if m.winner.name == jTeam.name && m.GetLoser().name == iTeam.name {
+				jWins++
+			} else {
+				// fmt.Printf("Dunno how to sort this shit %v\n", m)
+			}
 		}
-		return s.standings[i].team.wins > s.standings[j].team.wins
+		// if jWins+iWins != 2 {
+		// 	fmt.Printf("Dunno how to sort this shit man (%v vs %v) (%v-%v)\n", s.standings[i].team.name, s.standings[j].team.name,
+		// 		iWins, jWins)
+		// }
+
+		// fmt.Printf("%v vs %v -- %v-%v\n", iTeam.name, jTeam.name, iTeam.wins, jTeam.wins)
+		if iTeam.wins == jTeam.wins && iTeam.losses == jTeam.losses {
+			if iWins != jWins {
+				// fmt.Printf("Breaking h2h tie between %v and %v\n", s.standings[i].team.name, s.standings[j].team.name)
+				doNotTie = append(doNotTie, fmt.Sprintf("%v|%v", iTeam.name, jTeam.name))
+				doNotTie = append(doNotTie, fmt.Sprintf("%v|%v", jTeam.name, iTeam.name))
+			}
+			// fmt.Printf("Checking h2h between %v and %v -- %v-%v\n", iTeam.name, jTeam.name, iWins, jWins)
+			return iWins > jWins
+		} else if iTeam.losses != jTeam.losses {
+			return iTeam.losses < jTeam.losses
+		} else {
+			return iTeam.wins > jTeam.wins
+		}
 	})
 
 	for i, _ := range s.standings {
@@ -76,8 +109,12 @@ func (s Season) Sort() {
 			if s.standings[i].team.wins == s.standings[j].team.wins &&
 				s.standings[i].team.name != s.standings[j].team.name &&
 				s.standings[i].team.losses == s.standings[j].team.losses {
-				s.standings[i].tie = true
-				s.standings[j].tie = true
+				if !contains(doNotTie, fmt.Sprintf("%v|%v", s.standings[i].team.name, s.standings[j].team.name)) {
+					s.standings[i].tie = true
+					s.standings[j].tie = true
+				} else {
+					// fmt.Printf("Breaking h2h tie between %v and %v\n", s.standings[i].team.name, s.standings[j].team.name)
+				}
 			}
 		}
 	}
@@ -239,4 +276,13 @@ func SmartFormat(n float64) string {
 	} else {
 		return fmt.Sprintf("%.2f%%", n)
 	}
+}
+
+func contains(s []string, e string) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
 }
