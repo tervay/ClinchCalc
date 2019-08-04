@@ -29,9 +29,8 @@ func main() {
 	}
 	outro := strings.Replace(
 		"\n\n Percentages assume each match is a 50/50 tossup\n\n"+
-			" The percentages are imperfect due to how tiebreaker math works out; they are there simply for estimates\n\n"+
+			" Don't take this too seriously\n\n"+
 			" Written in some very low quality Go, pull requests welcome, PM me for link\n\n",
-		// "[ Foldy sheet by Adamgo83](https://www.reddit.com/r/leagueoflegends/comments/ciq0sj/clutch_gaming_vs_counter_logic_gaming_lcs_2019/ev8h337/)",
 		" ", " ^^^", -1)
 
 	league := os.Args[1]
@@ -55,40 +54,18 @@ func main() {
 	forces := [][]string{
 		// =========================== //
 		// ----------- LCS ----------- //
-		//
-		// ----------- LCS ----------- //
+		// []string{"OPT", "C9", "C9"},
+		// []string{"100T", "CLG", "CLG"},
+		// // ----------- LCS ----------- //
 		// =========================== //
 		// ----------- LEC ----------- //
-		// G2
-		[]string{"SK", "G2", "G2"},
-		[]string{"G2", "VIT", "G2"},
-		[]string{"G2", "RGE", "G2"},
-		[]string{"G2", "S04", "G2"},
-		[]string{"G2", "XL", "G2"},
-		[]string{"MSF", "G2", "G2"},
-		// FNC
-		[]string{"XL", "FNC", "FNC"},
-		[]string{"FNC", "VIT", "FNC"},
-		[]string{"FNC", "RGE", "FNC"},
-		// OG
-		[]string{"RGE", "OG", "OG"},
-		[]string{"OG", "XL", "OG"},
 		// ----------- LEC ----------- //
 		// =========================== //
 		// ----------- LCK ----------- //
-		// // JAG
-		// []string{"DWG", "JAG", "DWG"},
-		// []string{"JAG", "GEN", "GEN"},
-		// []string{"JAG", "KZ", "KZ"},
-		// []string{"KT", "JAG", "KT"},
-		// []string{"GRF", "JAG", "GRF"},
-		// // HLE
-		// []string{"KT", "HLE", "KT"},
-		// []string{"HLE", "DWG", "DWG"},
-		// []string{"HLE", "SKT", "SKT"},
-		// []string{"AF", "HLE", "AF"},
-		// []string{"HLE", "GRF", "GRF"},
 		// ----------- LCK ----------- //
+		// =========================== //
+		// ----------- LPL ----------- //
+		// ----------- LPL ----------- //
 		// =========================== //
 	}
 
@@ -129,7 +106,7 @@ func main() {
 		season.standings = append(season.standings, Rank{t, false})
 	}
 	season.schedule = s
-	season.Sort()
+	season.Sort(league == "lec")
 	for i, v := range season.standings {
 		// fmt.Printf("%s is %d-%d\n", v.team.name, v.team.wins, v.team.losses)
 		original_ranking_map[v.team.name] = i
@@ -145,7 +122,7 @@ func main() {
 
 	for combo := range GenerateCombinations("br", nSim) {
 		wg.Add(1)
-		for newSeason := range ProcessResults(combo, &wg, season, len(season.schedule.matches)-nSim-len(toSkip), forces, toSkip) {
+		for newSeason := range ProcessResults(combo, &wg, season, len(season.schedule.matches)-nSim-len(toSkip), forces, toSkip, league) {
 			for i, t := range newSeason.standings {
 				if _, ok := finishes[t.team.name]; !ok {
 					finishes[t.team.name] = make(map[int]float64)
@@ -249,20 +226,20 @@ func GenerateHelper(c chan string, combo string, alphabet string, length int) {
 	}
 }
 
-func ProcessResults(combination string, wg *sync.WaitGroup, s Season, offset int, forces [][]string, forced []int) <-chan Season {
+func ProcessResults(combination string, wg *sync.WaitGroup, s Season, offset int, forces [][]string, forced []int, league string) <-chan Season {
 	c := make(chan Season)
 	go func(c chan Season) {
 		defer close(c)
-		ProcessResultsHelper(c, combination, wg, s, offset, forces, forced)
+		ProcessResultsHelper(c, combination, wg, s, offset, forces, forced, league)
 	}(c)
 
 	return c
 }
 
 func ProcessResultsHelper(c chan Season, combination string, wg *sync.WaitGroup,
-	s Season, offset int, forces [][]string, forced []int) {
+	s Season, offset int, forces [][]string, forced []int, league string) {
 	latest := make(map[string]*Team)
-	print := combination == ""
+	print := combination == "z"
 	if !print {
 		// return
 	}
@@ -347,10 +324,10 @@ func ProcessResultsHelper(c chan Season, combination string, wg *sync.WaitGroup,
 	newSeason.schedule = newSchedule
 
 	checkForTeam := ""
-	checkForFinish := 4
-	checkQuietly := true
+	checkForFinish := 3
+	checkQuietly := false
 
-	newSeason.Sort()
+	newSeason.Sort(league == "lec")
 
 	if checkForTeam != "" {
 		if newSeason.standings[checkForFinish-1].team.name == checkForTeam {

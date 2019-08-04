@@ -59,7 +59,7 @@ type Season struct {
 	schedule  Schedule
 }
 
-func (s Season) Sort() {
+func (s Season) Sort(lec bool) {
 	for _, r := range s.standings {
 		r.tie = false
 	}
@@ -71,7 +71,9 @@ func (s Season) Sort() {
 		jTeam := s.standings[j].team
 		iWins := 0
 		jWins := 0
-		for _, m := range s.schedule.matches {
+		iWinsSecondHalf := 0
+		jWinsSecondHalf := 0
+		for z, m := range s.schedule.matches {
 			if m.winner == nil {
 				continue
 			}
@@ -79,24 +81,38 @@ func (s Season) Sort() {
 				iWins++
 			} else if m.winner.name == jTeam.name && m.GetLoser().name == iTeam.name {
 				jWins++
-			} else {
-				// fmt.Printf("Dunno how to sort this shit %v\n", m)
+			}
+
+			if m.winner.name == iTeam.name {
+				if z >= 44 {
+					iWinsSecondHalf++
+				}
+			} else if m.winner.name == jTeam.name {
+				if z >= 44 {
+					jWinsSecondHalf++
+				}
 			}
 		}
-		// if jWins+iWins != 2 {
-		// 	fmt.Printf("Dunno how to sort this shit man (%v vs %v) (%v-%v)\n", s.standings[i].team.name, s.standings[j].team.name,
-		// 		iWins, jWins)
-		// }
-
-		// fmt.Printf("%v vs %v -- %v-%v\n", iTeam.name, jTeam.name, iTeam.wins, jTeam.wins)
 		if iTeam.wins == jTeam.wins && iTeam.losses == jTeam.losses {
 			if iWins != jWins {
 				// fmt.Printf("Breaking h2h tie between %v and %v\n", s.standings[i].team.name, s.standings[j].team.name)
 				doNotTie = append(doNotTie, fmt.Sprintf("%v|%v", iTeam.name, jTeam.name))
 				doNotTie = append(doNotTie, fmt.Sprintf("%v|%v", jTeam.name, iTeam.name))
+				return iWins > jWins
+			} else if lec {
+				if iWinsSecondHalf != jWinsSecondHalf {	
+					doNotTie = append(doNotTie, fmt.Sprintf("%v|%v", iTeam.name, jTeam.name))
+					doNotTie = append(doNotTie, fmt.Sprintf("%v|%v", jTeam.name, iTeam.name))
+					if (iTeam.name == "G2" || iTeam.name == "FNC") && (jTeam.name == "G2" || jTeam.name == "FNC") {
+						// fmt.Printf("%v vs %v in 2nd half (%v to %v)\n", iTeam.name, jTeam.name, iWinsSecondHalf, jWinsSecondHalf)
+					}
+				}
+				
+				return iWinsSecondHalf > jWinsSecondHalf
+			} else {
+				return iWins > jWins
 			}
 			// fmt.Printf("Checking h2h between %v and %v -- %v-%v\n", iTeam.name, jTeam.name, iWins, jWins)
-			return iWins > jWins
 		} else if iTeam.losses != jTeam.losses {
 			return iTeam.losses < jTeam.losses
 		} else {
@@ -273,8 +289,10 @@ func SmartFormat(n float64) string {
 		return fmt.Sprintf("%.0f%%", n)
 	} else if n >= 0.1 {
 		return fmt.Sprintf("%.1f%%", n)
-	} else {
+	} else if n >= 0.01 {
 		return fmt.Sprintf("%.2f%%", n)
+	} else {
+		return fmt.Sprintf("%.3f%%", n)
 	}
 }
 
