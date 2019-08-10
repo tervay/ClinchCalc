@@ -263,6 +263,9 @@ func ParseSchedule(url string, teams map[string]*Team) Schedule {
 					winner = teams[red]
 				}
 			})
+			if red == "" {
+				return
+			}
 
 			var blue string
 			children.Slice(0, 1).Each(func(i int, el *goquery.Selection) {
