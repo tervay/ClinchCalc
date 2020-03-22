@@ -153,26 +153,56 @@ func MakeTeam(name string, circuitPoints int) *Team {
 	return &Team{name, 0, 0, circuitPoints}
 }
 
+// func GetLCSTeams() map[string]*Team {
+// 	m := make(map[string]*Team)
+// 	m["Team Liquid"] = &Team{"TL", 0, 0, 90}
+// 	m["Team SoloMid"] = &Team{"TSM", 0, 0, 70}
+// 	m["Cloud9"] = &Team{"C9", 0, 0, 40}
+// 	m["FlyQuest"] = &Team{"FLY", 0, 0, 40}
+// 	m["Echo Fox"] = &Team{"FOX", 0, 0, 10}
+// 	m["Golden Guardians"] = &Team{"GGS", 0, 0, 10}
+// 	m["100 Thieves"] = &Team{"100T", 0, 0, 0}
+// 	m["Clutch Gaming"] = &Team{"CG", 0, 0, 0}
+// 	m["Counter Logic Gaming"] = &Team{"CLG", 0, 0, 0}
+// 	m["OpTic Gaming"] = &Team{"OPT", 0, 0, 0}
+// 	return m
+// }
+
 func GetLCSTeams() map[string]*Team {
 	m := make(map[string]*Team)
-	m["Team Liquid"] = &Team{"TL", 0, 0, 90}
-	m["Team SoloMid"] = &Team{"TSM", 0, 0, 70}
-	m["Cloud9"] = &Team{"C9", 0, 0, 40}
-	m["FlyQuest"] = &Team{"FLY", 0, 0, 40}
-	m["Echo Fox"] = &Team{"FOX", 0, 0, 10}
-	m["Golden Guardians"] = &Team{"GGS", 0, 0, 10}
+	m["Team Liquid"] = &Team{"TL", 0, 0, 0}
+	m["Team SoloMid"] = &Team{"TSM", 0, 0, 0}
+	m["Cloud9"] = &Team{"C9", 0, 0, 0}
+	m["FlyQuest"] = &Team{"FLY", 0, 0, 0}
+	m["Immortals"] = &Team{"IMT", 0, 0, 0}
+	m["Golden Guardians"] = &Team{"GGS", 0, 0, 0}
 	m["100 Thieves"] = &Team{"100T", 0, 0, 0}
-	m["Clutch Gaming"] = &Team{"CG", 0, 0, 0}
+	m["Dignitas"] = &Team{"DIG", 0, 0, 0}
 	m["Counter Logic Gaming"] = &Team{"CLG", 0, 0, 0}
-	m["OpTic Gaming"] = &Team{"OPT", 0, 0, 0}
+	m["Evil Geniuses.NA"] = &Team{"EG", 0, 0, 0}
 	return m
 }
+
+// func GetLECTeams() map[string]*Team {
+// 	m := make(map[string]*Team)
+// 	m["G2 Esports"] = MakeTeam("G2", 0)
+// 	m["Fnatic"] = MakeTeam("FNC", 0)
+// 	m["Splyce"] = MakeTeam("SPY", 0)
+// 	m["FC Schalke 04 Esports"] = MakeTeam("S04", 0)
+// 	m["Origen"] = MakeTeam("OG", 0)
+// 	m["Rogue (European Team)"] = MakeTeam("RGE", 0)
+// 	m["Team Vitality"] = MakeTeam("VIT", 0)
+// 	m["Misfits Gaming"] = MakeTeam("MSF", 0)
+// 	m["SK Gaming"] = MakeTeam("SK", 0)
+// 	m["Excel Esports"] = MakeTeam("XL", 0)
+// 	return m
+// }
 
 func GetLECTeams() map[string]*Team {
 	m := make(map[string]*Team)
 	m["G2 Esports"] = MakeTeam("G2", 0)
 	m["Fnatic"] = MakeTeam("FNC", 0)
-	m["Splyce"] = MakeTeam("SPY", 0)
+	m["MAD Lions"] = MakeTeam("MAD", 0)
 	m["FC Schalke 04 Esports"] = MakeTeam("S04", 0)
 	m["Origen"] = MakeTeam("OG", 0)
 	m["Rogue (European Team)"] = MakeTeam("RGE", 0)

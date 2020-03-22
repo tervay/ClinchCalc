@@ -14,18 +14,18 @@ import (
 
 func main() {
 	urlconf := map[string]string{
-		"lck": "https://lol.gamepedia.com/LCK/2019_Season/Summer_Season",
-		"lec": "https://lol.gamepedia.com/LEC/2019_Season/Summer_Season",
-		"lcs": "https://lol.gamepedia.com/LCS/2019_Season/Summer_Season",
-		"lpl": "https://lol.gamepedia.com/LPL/2019_Season/Summer_Season",
-		"lms": "https://lol.gamepedia.com/LMS/2019_Season/Summer_Season",
+		// "lck": "https://lol.gamepedia.com/LCK/2019_Season/Summer_Season",
+		"lec": "https://lol.gamepedia.com/LEC/2020_Season/Spring_Season",
+		"lcs": "https://lol.gamepedia.com/LCS/2020_Season/Spring_Season",
+		// "lpl": "https://lol.gamepedia.com/LPL/2019_Season/Summer_Season",
+		// "lms": "https://lol.gamepedia.com/LMS/2019_Season/Summer_Season",
 	}
 	teamconf := map[string]map[string]*Team{
-		"lck": GetLCKTeams(),
+		// "lck": GetLCKTeams(),
 		"lcs": GetLCSTeams(),
 		"lec": GetLECTeams(),
-		"lpl": GetLPLTeams(),
-		"lms": GetLMSTeams(),
+		// "lpl": GetLPLTeams(),
+		// "lms": GetLMSTeams(),
 	}
 	outro := strings.Replace(
 		"\n\n Percentages assume each match is a 50/50 tossup\n\n"+
@@ -54,8 +54,8 @@ func main() {
 	forces := [][]string{
 		// =========================== //
 		// ----------- LCS ----------- //
-		// []string{"OPT", "C9", "C9"},
-		// []string{"100T", "CLG", "CLG"},
+		// []string{"TL", "C9", "C9"},
+		// []string{"FLY", "IMT", "FLY"},
 		// // ----------- LCS ----------- //
 		// =========================== //
 		// ----------- LEC ----------- //
@@ -324,7 +324,7 @@ func ProcessResultsHelper(c chan Season, combination string, wg *sync.WaitGroup,
 	newSeason.schedule = newSchedule
 
 	checkForTeam := ""
-	checkForFinish := 3
+	checkForFinish := 2
 	checkQuietly := false
 
 	newSeason.Sort(league == "lec")
