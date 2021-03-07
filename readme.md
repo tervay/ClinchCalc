@@ -1,14 +1,7 @@
-### Installation
-
-```bash
-λ go get github.com/dustin/go-humanize
-λ go get github.com/olekukonko/tablewriter
-```
-
 # Example usage
 
 ```bash
-λ go run main.go data.go <league> [--md] [--pct]
+λ go run . <league> [--md] [--pct]
 ```
 
 where `league` is one of lcs, lec, lpl, lck, or lms (lowercase, case-sensitive). `--md` changes the table to be a markdown table and has a small footer message attached. `--pct` displays the percentages in the table.
@@ -16,7 +9,7 @@ where `league` is one of lcs, lec, lpl, lck, or lms (lowercase, case-sensitive).
 If you want the simulator to assume a certain match is going to be won by a specific team, you can specify it in `main.go` via the `forces` map -- keep in mind it's blue/red side sensitive, so check gamepedia beforehand.
 
 ```bash
-λ go run main.go data.go lcs
+λ go run . lcs
 
         Simulating LCS from https://lol.gamepedia.com/LCS/2019_Season/Summer_Season
 
@@ -38,7 +31,7 @@ If you want the simulator to assume a certain match is going to be won by a spec
 | FOX  | 3-12 | X   | X   | X   | X   | X   | X   | X   |     |     |      |
 +------+------+-----+-----+-----+-----+-----+-----+-----+-----+-----+------+
 
-λ go run main.go data.go lcs --md
+λ go run . lcs --md
 
         Simulating LCS from https://lol.gamepedia.com/LCS/2019_Season/Summer_Season
 
@@ -65,7 +58,7 @@ If you want the simulator to assume a certain match is going to be won by a spec
 
  ^^^Written ^^^in ^^^some ^^^very ^^^low ^^^quality ^^^Go, ^^^pull ^^^requests ^^^welcome, ^^^PM ^^^me ^^^for ^^^link
 
-λ go run main.go data.go lcs --md --pct
+λ go run . lcs --md --pct
 
         Simulating LCS from https://lol.gamepedia.com/LCS/2019_Season/Summer_Season
 
@@ -94,7 +87,7 @@ If you want the simulator to assume a certain match is going to be won by a spec
 
  ^^^Written ^^^in ^^^some ^^^very ^^^low ^^^quality ^^^Go, ^^^pull ^^^requests ^^^welcome, ^^^PM ^^^me ^^^for ^^^link
 
-λ go run main.go data.go lms
+λ go run . lms
 
         Simulating LMS from https://lol.gamepedia.com/LMS/2019_Season/Summer_Season
 
