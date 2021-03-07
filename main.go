@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/cheggaaa/pb/v3"
 	"github.com/dustin/go-humanize"
 	"github.com/olekukonko/tablewriter"
 )
@@ -15,8 +16,8 @@ import (
 func main() {
 	urlconf := map[string]string{
 		// "lck": "https://lol.gamepedia.com/LCK/2019_Season/Summer_Season",
-		"lec": "https://lol.gamepedia.com/LEC/2020_Season/Spring_Season",
-		"lcs": "https://lol.gamepedia.com/LCS/2020_Season/Spring_Season",
+		"lec": "https://lol.gamepedia.com/LEC/2021_Season/Spring_Season",
+		"lcs": "https://lol.gamepedia.com/LCS/2021_Season/Spring_Season",
 		// "lpl": "https://lol.gamepedia.com/LPL/2019_Season/Summer_Season",
 		// "lms": "https://lol.gamepedia.com/LMS/2019_Season/Summer_Season",
 	}
@@ -54,8 +55,12 @@ func main() {
 	forces := [][]string{
 		// =========================== //
 		// ----------- LCS ----------- //
-		// []string{"TL", "C9", "C9"},
-		// []string{"FLY", "IMT", "FLY"},
+		// {"FLY", "C9", "C9"},
+		// {"TL", "CLG", "TL"},
+		// {"C9", "CLG", "C9"},
+		// {"TL", "GG", "TL"},
+		// {"GG", "TSM", "TSM"},
+		// {"IMT", "C9", "C9"},
 		// // ----------- LCS ----------- //
 		// =========================== //
 		// ----------- LEC ----------- //
@@ -120,8 +125,10 @@ func main() {
 	fmt.Printf("\n\tSimulating %d matches (%v combinations)\n\n",
 		nSim, humanize.Comma(int64(math.Pow(2, float64(nSim)))))
 
+	bar := pb.StartNew(int(math.Pow(2, float64(nSim))))
 	for combo := range GenerateCombinations("br", nSim) {
 		wg.Add(1)
+		bar.Increment()
 		for newSeason := range ProcessResults(combo, &wg, season, len(season.schedule.matches)-nSim-len(toSkip), forces, toSkip, league) {
 			for i, t := range newSeason.standings {
 				if _, ok := finishes[t.team.name]; !ok {
@@ -153,6 +160,8 @@ func main() {
 	}
 
 	wg.Wait()
+	bar.Finish()
+	fmt.Print("\n\n")
 
 	data := [][]string{}
 	teams := []string{}
